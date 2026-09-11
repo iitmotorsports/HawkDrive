@@ -1,0 +1,14 @@
+VERSION "1.0"
+
+NS_ : 
+	BA_
+	BA_DEF_
+	BA_DEF_DEF_
+
+BS_: 500000
+
+BU_: ECU_Engine ECU_Dashboard
+
+BO_ 256 EngineData: 8 ECU_Engine
+ SG_ Engine_RPM : 0|16@1+ (0.25,0) [0|16383] "RPM" ECU_Dashboard
+ SG_ Engine_Temp : 16|8@1+ (1,-40) [-40|215] "C" ECU_Dashboard
