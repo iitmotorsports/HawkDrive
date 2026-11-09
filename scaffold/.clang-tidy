@@ -8,3 +8,5 @@ Checks: >
 WarningsAsErrors: 'bugprone-*'
 
 HeaderFilterRegex: 'PDM/Inc/.*'
+
+TestScaffold
