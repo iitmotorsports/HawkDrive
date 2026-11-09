@@ -5,6 +5,7 @@ requires-python = ">=3.11"
 dependencies = [
     "cantools==45.1.2",
     "mashumaro>=3.23",
+    "questionary>=2.1.1",
     "requests>=2.34.2",
     "rich>=15.0.0",
     "typer>=0.23.2",

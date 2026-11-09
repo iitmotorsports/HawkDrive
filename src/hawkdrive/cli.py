@@ -1,9 +1,11 @@
 # src/hawkdrive/cli.py
 import shutil
+import sys
 from dataclasses import replace
 from pathlib import Path
 from typing import Annotated
 
+import questionary
 import typer
 from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue, MissingField
 from requests import RequestException
@@ -19,16 +21,43 @@ from hawkdrive.util import release_cache_path
 app = typer.Typer(help="Compile CAN databases and generate firmware bindings.")
 console = Console(stderr=True)
 
+
+
 @app.command()
-def init(directory: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Directory where HawkDrive will be initalized."),] = Path(".")) -> None:
+def init(directory: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Directory where HawkDrive will be initalized."),] = Path("."), node: Annotated[
+        str | None,
+        typer.Option("--node", "-n", help="Node name to save in hawkdrive.json."),
+    ] = None) -> None:
     """Initialize a repository with HawkDrive configurations."""
+    console.print(Text.assemble(("HawkDrive init", "bold cyan")))
+
     config_path = directory / "hawkdrive.json"
     gitignore_path = directory / ".gitignore"
+
+    if config_path.exists():
+        typer.echo(f"Config already exists at {config_path}", err=True)
+        raise typer.Exit(code=1)
+
+    if node is None:
+        if not sys.stdin.isatty():
+            typer.echo("Pass --node when running init noninteractively.", err=True)
+            raise typer.Exit(code=2)
+
+        node = questionary.text("Node name").ask()
+
+        if node is None:
+            raise typer.Exit(code=130)
+
+    node = node.strip()
+    if not node:
+        typer.echo("Node name cannot be empty.", err=True)
+        raise typer.Exit(code=2)
+
 
     latest_release: GitHubRelease = get_release()
 
     # Create config
-    config = HawkDriveConfig(tag_name=latest_release.tag_name, node='')
+    config = HawkDriveConfig(tag_name=latest_release.tag_name, node=node)
     try:
         with config_path.open("x", encoding="utf-8") as config_file:
             config_file.write(config.json_text())
