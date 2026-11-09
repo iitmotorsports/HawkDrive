@@ -1,22 +1,25 @@
 # src/hawkdrive/cli.py
+import json
 import shutil
 import sys
 from dataclasses import replace
+from importlib.metadata import PackageNotFoundError, distribution
 from pathlib import Path
 from typing import Annotated
 
 import questionary
 import typer
 from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue, MissingField
+from packaging.version import Version
 from requests import RequestException
 from rich.console import Console
 from rich.text import Text
 
 from hawkdrive.config import HawkDriveConfig, get_config, write_config
-from hawkdrive.const import HD_GITIGNORE_BLOCK
+from hawkdrive.const import HD_GITIGNORE_BLOCK, HAWKDRIVE_GIT_URL
 from hawkdrive.github import GitHubRelease, get_release, cache_release_source, ReleaseCacheError
 from hawkdrive.scaffold import apply_scaffold
-from hawkdrive.util import release_cache_path
+from hawkdrive.util import release_cache_path, shell_command, pipx_scope
 
 app = typer.Typer(help="Compile CAN databases and generate firmware bindings.")
 console = Console(stderr=True)
@@ -227,6 +230,71 @@ def sync(
 def generate() -> None:
     """Generate C bindings from the pinned DBC release."""
     typer.echo("HawkDrive generate is wired up.")
+
+@app.command()
+def upgrade() -> None:
+    """Check for a newer HawkDrive CLI and show how to install it."""
+    console.print("[bold cyan]HawkDrive upgrade[/]")
+
+    try:
+        installed = distribution("hawkdrive")
+        origin = json.loads(installed.read_text("direct_url.json") or "{}")
+
+        if origin.get("dir_info", {}).get("editable"):
+            console.print("[cyan]Editable install[/]  From your HawkDrive checkout, run:")
+            console.print(Text("  git pull --ff-only\n  uv sync"))
+            return
+
+        latest_tag = get_release().tag_name
+        if Version(latest_tag) <= Version(installed.version):
+            console.print(Text.assemble(
+                ("OK", "bold green"),
+                f"  No newer stable release. Installed {installed.version}; "
+                f"latest stable is {latest_tag}.",
+            ))
+            return
+
+        package_spec = f"{HAWKDRIVE_GIT_URL}@{latest_tag}"
+        prefix = Path(sys.prefix).resolve()
+        pipx_metadata = prefix / "pipx_metadata.json"
+        command = None
+
+        if pipx_metadata.is_file():
+            metadata = json.loads(pipx_metadata.read_text(encoding="utf-8"))
+            main_package = metadata.get("main_package", {})
+
+            if main_package.get("package") == "hawkdrive" and prefix.name == "hawkdrive":
+                scope = pipx_scope(prefix)
+                if scope == "user":
+                    command = ["pipx", "install", "--force", package_spec]
+                elif scope == "global":
+                    command = ["sudo", "pipx", "install", "--global", "--force", package_spec]
+
+        elif (installed.read_text("INSTALLER") or "").strip() == "pip":
+            command = [
+                sys.executable, "-m", "pip", "install", "--upgrade", package_spec,
+            ]
+
+    except (OSError, ValueError, PackageNotFoundError, RequestException) as exc:
+        console.print(Text.assemble(("Upgrade check failed", "bold red"), f"  {exc}"))
+        raise typer.Exit(code=1) from None
+
+    console.print(Text.assemble(
+        ("Update available", "bold yellow"),
+        f"  {installed.version} → {latest_tag}",
+    ))
+
+    if command is None:
+        console.print(Text(
+            f"Could not determine an upgrade command for {sys.prefix}.\n"
+            "Install the new release using the tool that installed this copy."
+        ))
+        return
+
+    console.print(Text.assemble(
+        "  Run: ",
+        (shell_command(command), "bold cyan"),
+    ))
 
 def main() -> None:
     app()
