@@ -6,6 +6,7 @@ dependencies = [
     "cantools==45.1.2",
     "mashumaro>=3.23",
     "requests>=2.34.2",
+    "rich>=15.0.0",
     "typer>=0.23.2",
 ]
 
@@ -15,3 +16,4 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 hawkdrive = "hawkdrive.cli:main"
+hd = "hawkdrive.cli:main"
