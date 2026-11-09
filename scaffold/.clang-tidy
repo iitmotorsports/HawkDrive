@@ -1,0 +1,10 @@
+Checks: >
+  clang-diagnostic-*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  readability-braces-around-statements
+
+WarningsAsErrors: 'bugprone-*'
+
+HeaderFilterRegex: 'PDM/Inc/.*'

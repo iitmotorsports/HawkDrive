@@ -1,0 +1,35 @@
+name: cpp-linter.yml
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - synchronize
+jobs:
+  cpp-linter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: carlosperate/arm-none-eabi-gcc-action@v1
+        with:
+          release: '15.3.Rel1'
+      - run: arm-none-eabi-gcc --version
+      - name: Generate compile_commands
+        run: cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON --preset Debug
+      - uses: cpp-linter/cpp-linter-action@v2
+        id: linter
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          style: 'file'
+          tidy-checks: ''
+          database: 'build/Debug'
+          thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
+          ignore: 'Drivers/|Middlewares/|SMBus_PMBus_Stack/|Core/|build/|AZURE_RTOS/|cmake/'
+          extra-args: '--target=arm-none-eabi'
+      - name: Fail fast?!
+        if: steps.linter.outputs.checks-failed > 0
+        run: |
+          echo "::error:: Linting failed. Please fix before merging."
+          exit 1
