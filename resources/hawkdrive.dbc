@@ -5,8 +5,6 @@ NS_ :
 	BA_DEF_
 	BA_DEF_DEF_
 
-BS_: 500000
-
 BU_: ECU_Engine ECU_Dashboard
 
 BO_ 256 EngineData: 8 ECU_Engine
