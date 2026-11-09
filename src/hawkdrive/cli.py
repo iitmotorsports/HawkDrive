@@ -1,5 +1,4 @@
 # src/hawkdrive/cli.py
-import json
 import shutil
 from dataclasses import replace
 from pathlib import Path
@@ -14,7 +13,8 @@ from rich.text import Text
 from hawkdrive.config import HawkDriveConfig, get_config, write_config
 from hawkdrive.const import HD_GITIGNORE_BLOCK
 from hawkdrive.github import GitHubRelease, get_release, cache_release_source, ReleaseCacheError
-from hawkdrive.util import does_cache_exist
+from hawkdrive.scaffold import apply_scaffold
+from hawkdrive.util import release_cache_path
 
 app = typer.Typer(help="Compile CAN databases and generate firmware bindings.")
 console = Console(stderr=True)
@@ -143,24 +143,43 @@ def sync(
             help="Repository directory containing hawkdrive.json.",
         ),
     ] = Path("."),
+    force: Annotated[
+        bool,
+        typer.Option("--force", help="Apply the scaffold despite local file conflicts."),
+    ] = False,
 ) -> None:
-    """Cache the pinned HawkDrive release for this repository."""
+    """Cache the pinned HawkDrive release and apply its scaffold."""
     try:
         config = get_config(directory)
         tag = config.tag_name
+        cached_path = release_cache_path(tag, directory)
 
         console.print(Text.assemble(("HawkDrive sync", "bold cyan"), f"  {tag}"))
 
-        if does_cache_exist(tag, directory):
+        if cached_path.is_dir():
             console.print("[bold green]OK[/]  Release already cached")
-            return
+        else:
+            console.print("[cyan]Download[/]  Fetching the pinned release from GitHub")
+            with console.status("Downloading and extracting release…", spinner="dots"):
+                release = get_release(tag)
+                cached_path = cache_release_source(release, directory)
 
-        console.print("[cyan]Download[/]  Fetching the pinned release from GitHub")
-        with console.status("Downloading and extracting release…", spinner="dots"):
-            release = get_release(tag)
-            cached_path = cache_release_source(release, directory)
+            console.print(Text.assemble(("OK", "bold green"), f"  Cached at {cached_path}"))
 
-        console.print(Text.assemble(("OK", "bold green"), f"  Cached at {cached_path}"))
+        console.print("[cyan]Scaffold[/]  Applying shared files")
+        result = apply_scaffold(directory, cached_path, tag, force=force)
+
+        for path in result.written:
+            console.print(Text.assemble(("  Write ", "green"), path))
+
+        for path in result.removed:
+            console.print(Text.assemble(("  Remove ", "yellow"), path))
+
+        summary = (
+            f"  Scaffold synced · {len(result.written)} written, "
+            f"{len(result.removed)} removed, {len(result.unchanged)} unchanged"
+        )
+        console.print(Text.assemble(("OK", "bold green"), summary))
 
     except (
         OSError,
