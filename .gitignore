@@ -224,3 +224,7 @@ __marimo__/
 
 /.venv/
 .idea
+
+# Ignore HawkDrive cache
+.hawkdrive/
+
