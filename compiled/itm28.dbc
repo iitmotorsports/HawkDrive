@@ -33,20 +33,49 @@ NS_ :
 
 BS_:
 
-BU_: ECU_Dashboard ECU_Engine
+BU_: PCM PDM
 
 
-BO_ 256 EngineData: 8 ECU_Engine
- SG_ Engine_RPM : 0|16@1+ (0.25,0) [0|16383] "RPM"  ECU_Dashboard
+BO_ 3 PDM_HsdStatus: 5 PDM
+ SG_ Hsd4Current : 32|8@1+ (0.04,0) [0|10] "A" Vector__XXX
+ SG_ Hsd3Current : 24|8@1+ (0.04,0) [0|10] "A" Vector__XXX
+ SG_ Hsd2Current : 16|8@1+ (0.04,0) [0|10] "A" Vector__XXX
+ SG_ Hsd1Current : 8|8@1+ (0.04,0) [0|10] "A" Vector__XXX
+ SG_ Hsd4On : 3|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Hsd3On : 2|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Hsd2On : 1|1@1+ (1,0) [0|1] "" Vector__XXX
+ SG_ Hsd1On : 0|1@1+ (1,0) [0|1] "" Vector__XXX
+
+BO_ 259 PCM_HsdCommand: 1 PCM
+ SG_ Hsd4Set : 7|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd4State : 6|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd3Set : 5|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd3State : 4|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd2Set : 3|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd2State : 2|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd1Set : 1|1@1+ (1,0) [0|1] ""  PDM
+ SG_ Hsd1State : 0|1@1+ (1,0) [0|1] ""  PDM
 
 
 
 
+CM_ BO_ 3 "PDM-reported on/off state. Byte 0 bits 4 through 7 are reserved and transmitted as zero. Saturate current at 10 A. Raw current values 251 through 255 are reserved.";
+CM_ BO_ 259 "Use the Set bits to choose which drivers to update. For each selected driver, a State of 1 turns it on and a State of 0 turns it off. All other drivers keep their current state.";
 
 
 
-
-
+VAL_ 3 Hsd4On 0 "Off" 1 "On" ;
+VAL_ 3 Hsd3On 0 "Off" 1 "On" ;
+VAL_ 3 Hsd2On 0 "Off" 1 "On" ;
+VAL_ 3 Hsd1On 0 "Off" 1 "On" ;
+VAL_ 259 Hsd4Set 0 "DoNothing" 1 "Set" ;
+VAL_ 259 Hsd4State 0 "Off" 1 "On" ;
+VAL_ 259 Hsd3Set 0 "DoNothing" 1 "Set" ;
+VAL_ 259 Hsd3State 0 "Off" 1 "On" ;
+VAL_ 259 Hsd2Set 0 "DoNothing" 1 "Set" ;
+VAL_ 259 Hsd2State 0 "Off" 1 "On" ;
+VAL_ 259 Hsd1Set 0 "DoNothing" 1 "Set" ;
+VAL_ 259 Hsd1State 0 "Off" 1 "On" ;
 
 
 
