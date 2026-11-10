@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "vehicles": {
+    "ITM28": {
+      "buses": {
+        "vehicle": {
+          "sources": ["pdm.dbc"]
+        }
+      }
+    }
+  }
+}

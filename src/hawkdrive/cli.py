@@ -15,6 +15,7 @@ from requests import RequestException
 from rich.console import Console
 from rich.text import Text
 
+from hawkdrive import dbc
 from hawkdrive.config import HawkDriveConfig, get_config, write_config
 from hawkdrive.const import HD_GITIGNORE_BLOCK, HAWKDRIVE_GIT_URL
 from hawkdrive.github import GitHubRelease, get_release, cache_release_source, ReleaseCacheError
@@ -22,6 +23,7 @@ from hawkdrive.scaffold import apply_scaffold
 from hawkdrive.util import release_cache_path, shell_command, pipx_scope
 
 app = typer.Typer(help="Compile CAN databases and generate firmware bindings.")
+app.add_typer(dbc.app, name="dbc")
 console = Console(stderr=True)
 
 
