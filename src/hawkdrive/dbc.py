@@ -38,54 +38,46 @@ def _source_path(dbc_root: Path, source: str) -> Path:
     return path
 
 
-def _render_vehicle(dbc_root: Path, vehicle: str, buses: dict[str, Any]) -> bytes:
+def _render_vehicle(dbc_root: Path, vehicle: str, sources: list[str]) -> bytes:
     messages: list[Message] = []
     nodes: dict[str, Node] = {}
     frame_origins: dict[tuple[bool, int], str] = {}
     name_origins: dict[str, str] = {}
 
-    for bus, config in sorted(buses.items()):
-        label = f"{vehicle}.{bus}"
-        sources = _object(config, label).get("sources")
-        if (
-            not isinstance(sources, list)
-            or not sources
-            or any(not isinstance(source, str) for source in sources)
-        ):
-            raise ValueError(f"{label}.sources must be a nonempty list of paths.")
+    for source in sources:
+        path = _source_path(dbc_root, source)
+        try:
+            database = load_string(
+                path.read_text(encoding=DBC_ENCODING),
+                database_format="dbc",
+                strict=True,
+            )
+        except UnsupportedDatabaseFormatError as exc:
+            raise ValueError(f"{vehicle}/{source}: {exc}") from exc
 
-        for source in sources:
-            path = _source_path(dbc_root, source)
-            try:
-                database = load_string(
-                    path.read_text(encoding=DBC_ENCODING),
-                    database_format="dbc",
-                    strict=True,
+        for node in database.nodes:
+            nodes.setdefault(node.name, node)
+
+        for message in database.messages:
+            origin = f"{vehicle}/{source} ({message.name})"
+            frame = (message.is_extended_frame, message.frame_id)
+
+            if frame in frame_origins:
+                kind = "extended" if message.is_extended_frame else "standard"
+                raise ValueError(
+                    f"Duplicate {kind} CAN ID {message.frame_id:#x}: "
+                    f"{frame_origins[frame]} and {origin}"
                 )
-            except UnsupportedDatabaseFormatError as exc:
-                raise ValueError(f"{label}/{source}: {exc}") from exc
 
-            for node in database.nodes:
-                nodes.setdefault(node.name, node)
+            if message.name in name_origins:
+                raise ValueError(
+                    f"Duplicate message name {message.name!r}: "
+                    f"{name_origins[message.name]} and {origin}"
+                )
 
-            for message in database.messages:
-                origin = f"{label}/{source} ({message.name})"
-                frame = (message.is_extended_frame, message.frame_id)
-                if frame in frame_origins:
-                    kind = "extended" if message.is_extended_frame else "standard"
-                    raise ValueError(
-                        f"Duplicate {kind} CAN ID {message.frame_id:#x}: "
-                        f"{frame_origins[frame]} and {origin}"
-                    )
-                if message.name in name_origins:
-                    raise ValueError(
-                        f"Duplicate message name {message.name!r}: "
-                        f"{name_origins[message.name]} and {origin}"
-                    )
-
-                frame_origins[frame] = origin
-                name_origins[message.name] = origin
-                messages.append(message)
+            frame_origins[frame] = origin
+            name_origins[message.name] = origin
+            messages.append(message)
 
     messages.sort(key=lambda message: (message.frame_id, message.is_extended_frame))
     merged = Database(
@@ -117,11 +109,18 @@ def render_outputs(root: Path) -> dict[str, bytes]:
         if filename in outputs:
             raise ValueError(f"Multiple vehicles map to {filename}.")
 
-        buses = _object(_object(config, vehicle).get("buses"), f"{vehicle}.buses")
-        outputs[filename] = _render_vehicle(dbc_root, vehicle, buses)
+        label = f"vehicles.{vehicle}"
+        sources = _object(config, label).get("sources")
+        if (
+            not isinstance(sources, list)
+            or not sources
+            or any(not isinstance(source, str) or not source.strip() for source in sources)
+        ):
+            raise ValueError(f"{label}.sources must be a nonempty list of paths.")
+
+        outputs[filename] = _render_vehicle(dbc_root, vehicle, sources)
 
     return outputs
-
 
 @app.command("compile")
 def compile_command() -> None:
