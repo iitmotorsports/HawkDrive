@@ -32,7 +32,8 @@ console = Console(stderr=True)
 def init(directory: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Directory where HawkDrive will be initalized."),] = Path("."), node: Annotated[
         str | None,
         typer.Option("--node", "-n", help="Node name to save in hawkdrive.json."),
-    ] = None) -> None:
+] = None, vehicle: Annotated[str | None, typer.Option("--vehicle", "-v", help="Vehicle name to save in hawkdrive.json."),
+] = None) -> None:
     """Initialize a repository with HawkDrive configurations."""
     console.print(Text.assemble(("HawkDrive init", "bold cyan")))
 
@@ -48,21 +49,35 @@ def init(directory: Annotated[Path, typer.Argument(exists=True, file_okay=False,
             typer.echo("Pass --node when running init noninteractively.", err=True)
             raise typer.Exit(code=2)
 
-        node = questionary.text("Node name").ask()
+    if vehicle is None:
+        if not sys.stdin.isatty():
+            typer.echo("Pass --vehicle when running init noninteractively.", err=True)
+            raise typer.Exit(code=2)
 
-        if node is None:
-            raise typer.Exit(code=130)
+    node = questionary.text("Node name").ask()
+
+    if node is None:
+        raise typer.Exit(code=130)
 
     node = node.strip()
     if not node:
         typer.echo("Node name cannot be empty.", err=True)
         raise typer.Exit(code=2)
 
+    vehicle = questionary.text("Vehicle name").ask()
+
+    if vehicle is None:
+        raise typer.Exit(code=130)
+
+    vehicle = vehicle.strip()
+    if not vehicle:
+        typer.echo("Vehicle name cannot be empty.", err=True)
+        raise typer.Exit(code=2)
 
     latest_release: GitHubRelease = get_release()
 
     # Create config
-    config = HawkDriveConfig(tag_name=latest_release.tag_name, node=node)
+    config = HawkDriveConfig(tag_name=latest_release.tag_name, node=node, vehicle=vehicle)
     try:
         with config_path.open("x", encoding="utf-8") as config_file:
             config_file.write(config.json_text())
