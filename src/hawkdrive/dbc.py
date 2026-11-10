@@ -2,11 +2,15 @@ import json
 import re
 from pathlib import Path, PureWindowsPath
 from tempfile import TemporaryDirectory
-from typing import Any
+from typing import Any, Annotated
+from urllib.parse import quote
 
 import typer
 from cantools.database import UnsupportedDatabaseFormatError, load_string
-from cantools.database.can import Database, Message, Node
+from cantools.database.can import Database, Message, Node, c_source
+from mashumaro.exceptions import ExtraKeysError, InvalidFieldValue, MissingField
+
+from hawkdrive.config import get_config
 
 app = typer.Typer(help="Compile and verify vehicle DBCs.", no_args_is_help=True)
 
@@ -19,6 +23,11 @@ def _object(value: object, label: str) -> dict[str, Any]:
     if not isinstance(value, dict) or not value:
         raise ValueError(f"{label} must be a nonempty object.")
     return value
+
+def _vehicle_filename(vehicle: str) -> str:
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", vehicle):
+        raise ValueError(f"Invalid vehicle ID: {vehicle!r}")
+    return f"{vehicle.lower()}.dbc"
 
 
 def _source_path(dbc_root: Path, source: str) -> Path:
@@ -180,3 +189,81 @@ def verify_command() -> None:
         raise typer.Exit(1)
 
     typer.echo(f"OK  {len(outputs)} vehicle DBC(s) up to date.")
+
+    @app.command("generate")
+    def generate_command(
+            directory: Annotated[
+                Path,
+                typer.Argument(
+                    exists=True,
+                    file_okay=False,
+                    help="Module directory containing hawkdrive.json.",
+                ),
+            ] = Path("."),
+    ) -> None:
+        """Generate node-specific C bindings from the pinned vehicle DBC."""
+        try:
+            config = get_config(directory)
+            if config.tag_name in {"", ".", ".."}:
+                raise ValueError(f"Invalid release tag: {config.tag_name!r}")
+
+            tag_dir = quote(config.tag_name, safe="")
+            dbc_path = (
+                    directory / ".hawkdrive" / "releases" / tag_dir
+                    / "compiled" / _vehicle_filename(config.vehicle)
+            )
+            if not dbc_path.is_file():
+                raise ValueError(
+                    f"Compiled DBC missing: {dbc_path}. "
+                    f"Run 'hd sync' and check that {config.tag_name} includes {config.vehicle}."
+                )
+
+            database = load_string(
+                dbc_path.read_text(encoding=DBC_ENCODING),
+                database_format="dbc",
+                strict=True,
+            )
+            if not any(node.name == config.node for node in database.nodes):
+                available = ", ".join(node.name for node in database.nodes) or "(none)"
+                raise ValueError(
+                    f"Node {config.node!r} is missing from {dbc_path.name}. "
+                    f"Available nodes: {available}."
+                )
+
+            header_name = "hawkdrive_can.h"
+            source_name = "hawkdrive_can.c"
+            header, source, _, _ = c_source.generate(
+                database=database,
+                database_name="hawkdrive_can",
+                header_name=header_name,
+                source_name=source_name,
+                fuzzer_source_name="hawkdrive_can_fuzzer.c",
+                node_name=config.node,
+            )
+
+            output_root = directory / "HawkDrive"
+            header_path = output_root / "Inc" / header_name
+            source_path = output_root / "Src" / source_name
+            header_path.parent.mkdir(parents=True, exist_ok=True)
+            source_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with TemporaryDirectory(dir=output_root) as temp:
+                stage = Path(temp)
+                (stage / header_name).write_text(header, encoding="utf-8", newline="\n")
+                (stage / source_name).write_text(source, encoding="utf-8", newline="\n")
+                (stage / header_name).replace(header_path)
+                (stage / source_name).replace(source_path)
+
+        except (
+                OSError,
+                ValueError,
+                UnsupportedDatabaseFormatError,
+                ExtraKeysError,
+                InvalidFieldValue,
+                MissingField,
+        ) as exc:
+            typer.echo(f"DBC generate failed: {exc}", err=True)
+            raise typer.Exit(1) from exc
+
+        typer.echo(f"WROTE  {header_path}")
+        typer.echo(f"WROTE  {source_path}")

@@ -13,6 +13,7 @@ from hawkdrive.const import CONFIG_FILENAME
 class HawkDriveConfig(DataClassJSONMixin):
     tag_name: str
     node: str
+    vehicle: str
     schema_version: int = 1
 
     def json_text(self) -> str:

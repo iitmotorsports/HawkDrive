@@ -227,12 +227,6 @@ def sync(
         console.print(Text.assemble(("Sync failed", "bold red"), f"  {exc}"))
         raise typer.Exit(code=1) from None
 
-
-@app.command()
-def generate() -> None:
-    """Generate C bindings from the pinned DBC release."""
-    typer.echo("HawkDrive generate is wired up.")
-
 @app.command()
 def upgrade() -> None:
     """Check for a newer HawkDrive CLI and show how to install it."""
