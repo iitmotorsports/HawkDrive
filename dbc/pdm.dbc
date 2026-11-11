@@ -8,15 +8,11 @@ BS_:
 
 BU_: PCM PDM
 
-BO_ 3 PDM_HsdStatus: 5 PDM
+BO_ 3 PDM_HsdStatus: 1 PDM
  SG_ Hsd1On : 0|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ Hsd2On : 1|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ Hsd3On : 2|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ Hsd4On : 3|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ Hsd1Current : 8|8@1+ (0.04,0) [0|10] "A" Vector__XXX
- SG_ Hsd2Current : 16|8@1+ (0.04,0) [0|10] "A" Vector__XXX
- SG_ Hsd3Current : 24|8@1+ (0.04,0) [0|10] "A" Vector__XXX
- SG_ Hsd4Current : 32|8@1+ (0.04,0) [0|10] "A" Vector__XXX
 
 BO_ 259 PCM_HsdCommand: 1 PCM
  SG_ Hsd1State : 0|1@1+ (1,0) [0|1] "" PDM
