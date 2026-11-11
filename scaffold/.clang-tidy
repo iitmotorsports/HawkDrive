@@ -7,4 +7,4 @@ Checks: >
 
 WarningsAsErrors: 'bugprone-*'
 
-HeaderFilterRegex: 'PDM/Inc/.*'
+HeaderFilterRegex: '{{{NODE}}}/Inc/.*'
