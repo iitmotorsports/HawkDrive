@@ -26,7 +26,7 @@ jobs:
           tidy-checks: ''
           database: 'build/Debug'
           thread-comments: ${{ github.event_name == 'pull_request' && 'update' }}
-          ignore: 'Drivers/|Middlewares/|SMBus_PMBus_Stack/|Core/|build/|AZURE_RTOS/|cmake/'
+          ignore: 'Drivers/|Middlewares/|SMBus_PMBus_Stack/|Core/|build/|AZURE_RTOS/|cmake/|HawkDrive/'
           extra-args: '--target=arm-none-eabi'
       - name: Fail fast?!
         if: steps.linter.outputs.checks-failed > 0
