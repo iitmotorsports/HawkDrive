@@ -216,7 +216,10 @@ def sync(
             console.print(Text.assemble(("OK", "bold green"), f"  Cached at {cached_path}"))
 
         console.print("[cyan]Scaffold[/]  Applying shared files")
-        result = apply_scaffold(directory, cached_path, tag, force=force)
+        result = apply_scaffold(directory, cached_path, tag, force=force, variables={
+            "NODE": config.node,
+            "VEHICLE": config.vehicle,
+        })
 
         for path in result.written:
             console.print(Text.assemble(("  Write ", "green"), path))
