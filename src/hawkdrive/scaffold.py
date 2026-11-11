@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 LOCK_FILENAME = "hawkdrive-scaffold.lock.json"
 _RESERVED = {".git", ".hawkdrive", "hawkdrive.json", LOCK_FILENAME}
 _SHA256 = re.compile(r"[0-9a-f]{64}")
+_VARIABLE = re.compile(r"\{\{\{([A-Z][A-Z0-9_]*)\}\}\}")
 
 
 class ScaffoldError(ValueError):
@@ -38,9 +39,11 @@ def apply_scaffold(
     release_directory: Path,
     tag_name: str,
     *,
+    variables: dict[str, str] | None = None,
     force: bool = False,
 ) -> ScaffoldResult:
     """Apply the cached scaffold and record the installed file hashes."""
+    variables = variables or {}
     directory = directory.resolve(strict=True)
     if not directory.is_dir():
         raise ScaffoldError(f"Expected a repository directory: {directory}")
@@ -61,7 +64,7 @@ def apply_scaffold(
         if not source.is_file():
             raise ScaffoldError(f"Scaffold source is not a regular file: {source}")
         name = source.relative_to(source_dir).as_posix()
-        incoming[name] = source.read_bytes()
+        incoming[name] = _render_template(source.read_bytes(), variables)
 
     hashes = {name: _hash(data) for name, data in incoming.items()}
     writes: dict[str, Path] = {}
@@ -147,6 +150,24 @@ def _read_lock(path: Path) -> dict[str, str]:
         raise ScaffoldError(f"Invalid scaffold lock: {path}")
     return files
 
+def _render_template(data: bytes, variables: dict[str, str]) -> bytes:
+    if b"{{{" not in data:
+        return data
+
+    try:
+        content = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ScaffoldError("Template contains invalid UTF-8") from exc
+
+    def replace(match: re.Match[str]) -> str:
+        name = match.group(1)
+
+        if name not in variables:
+            raise ScaffoldError(f"Unknown scaffold variable: {name}")
+
+        return variables[name]
+
+    return _VARIABLE.sub(replace, content).encode("utf-8")
 
 def _hash(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
