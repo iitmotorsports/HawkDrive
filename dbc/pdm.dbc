@@ -24,7 +24,7 @@ BO_ 259 PCM_HsdCommand: 1 PCM
  SG_ Hsd4State : 6|1@1+ (1,0) [0|1] "" PDM
  SG_ Hsd4Set : 7|1@1+ (1,0) [0|1] "" PDM
 
-CM_ BO_ 3 "PDM-reported on/off state. Byte 0 bits 4 through 7 are reserved and transmitted as zero. Saturate current at 10 A. Raw current values 251 through 255 are reserved.";
+CM_ BO_ 3 "PDM-reported on/off state. Byte 0 bits 4 through 7 are reserved and transmitted as zero.";
 CM_ BO_ 259 "Use the Set bits to choose which drivers to update. For each selected driver, a State of 1 turns it on and a State of 0 turns it off. All other drivers keep their current state.";
 
 VAL_ 3 Hsd1On 0 "Off" 1 "On";

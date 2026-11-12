@@ -1,0 +1,38 @@
+VERSION ""
+
+NS_ :
+    CM_
+    VAL_
+
+BS_:
+
+BU_: PCM PDM
+
+BO_ 260 PCM_AnalogStatus: 1 PCM
+ SG_ AppsHStatus : 0|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+ SG_ AppsLStatus : 12|12@1+ (0.0008056640625,0) [0|3.3] "V" Vector__XXX
+ SG_ FrontBrakeStatus : 24|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+ SG_ RearBrakeStatus : 36|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+ SG_ SteeringStatus : 48|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+
+BO_ 259 PCM_HsdCommand: 1 PCM
+ SG_ Hsd1State : 0|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd1Set : 1|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd2State : 2|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd2Set : 3|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd3State : 4|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd3Set : 5|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd4State : 6|1@1+ (1,0) [0|1] "" PDM
+ SG_ Hsd4Set : 7|1@1+ (1,0) [0|1] "" PDM
+
+CM_ BO_ 259 "Use the Set bits to choose which drivers to update. For each selected driver, a State of 1 turns it on and a State of 0 turns it off. All other drivers keep their current state.";
+CM_ BO_ 260 "PCM reported analog status for each sensor";
+
+VAL_ 259 Hsd1State 0 "Off" 1 "On";
+VAL_ 259 Hsd1Set 0 "DoNothing" 1 "Set";
+VAL_ 259 Hsd2State 0 "Off" 1 "On";
+VAL_ 259 Hsd2Set 0 "DoNothing" 1 "Set";
+VAL_ 259 Hsd3State 0 "Off" 1 "On";
+VAL_ 259 Hsd3Set 0 "DoNothing" 1 "Set";
+VAL_ 259 Hsd4State 0 "Off" 1 "On";
+VAL_ 259 Hsd4Set 0 "DoNothing" 1 "Set";
