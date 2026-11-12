@@ -2,7 +2,7 @@
   "schema_version": 1,
   "vehicles": {
     "ITM28": {
-      "sources": ["pdm.dbc"]
+      "sources": ["pdm.dbc", "pcm.dbc"]
     }
   }
 }
