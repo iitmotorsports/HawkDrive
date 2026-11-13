@@ -1,0 +1,18 @@
+VERSION ""
+
+NS_ :
+    CM_
+    VAL_
+
+BS_:
+
+BU_: PCM PDM
+
+BO_ 260 PCM_AnalogVoltage: 8 PCM
+ SG_ AppsHVoltage : 0|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+ SG_ AppsLVoltage : 12|12@1+ (0.0008056640625,0) [0|3.3] "V" Vector__XXX
+ SG_ FrontBrakeVoltage : 24|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+ SG_ RearBrakeVoltage : 36|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+ SG_ SteeringVoltage : 48|12@1+ (0.001220703125,0) [0|5] "V" Vector__XXX
+
+CM_ BO_ 260 "PCM-reported analog voltage for each sensor";
